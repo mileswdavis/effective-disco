@@ -3,6 +3,34 @@
 While the following examples use Travis CI, their principles should
 straightforwardly transfer to other continuous integration providers as well.
 
+## Deploying Your Book to GitLab Pages
+Inside your repository's project root, create a file named `.gitlab-ci.yml` with the following contents:
+```yml
+stages:
+    - deploy
+
+pages:
+  stage: deploy
+  image: rust
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/cargo
+  before_script:
+    - export PATH="$PATH:$CARGO_HOME/bin"
+    - mdbook --version || cargo install mdbook
+  script:
+        - mdbook build -d public
+  only:
+      - master 
+  artifacts:
+      paths:
+          - public
+  cache:
+    paths:
+    - $CARGO_HOME/bin
+```
+
+After you commit and push this new file, GitLab CI will run and your book will be available!
+
 ## Ensuring Your Book Builds and Tests Pass
 
 Here is a sample Travis CI `.travis.yml` configuration that ensures `mdbook
@@ -27,6 +55,38 @@ before_script:
 
 script:
   - mdbook build path/to/mybook && mdbook test path/to/mybook
+```
+### Deploying to GitHub Pages manually
+
+If your CI doesn't support GitHub pages, or you're deploying somewhere else
+with integrations such as Github Pages:
+ *note: you may want to use different tmp dirs*:
+
+```console
+$> git worktree add /tmp/book gh-pages
+$> mdbook build
+$> rm -rf /tmp/book/* # this won't delete the .git directory
+$> cp -rp book/* /tmp/book/
+$> cd /tmp/book
+$> git add -A
+$> git commit 'new book message'
+$> git push origin gh-pages
+$> cd -
+```
+
+Or put this into a Makefile rule:
+
+```makefile
+.PHONY: deploy
+deploy: book
+	@echo "====> deploying to github"
+	git worktree add /tmp/book gh-pages
+	rm -rf /tmp/book/*
+	cp -rp book/* /tmp/book/
+	cd /tmp/book && \
+		git add -A && \
+		git commit -m "deployed on $(shell date) by ${USER}" && \
+		git push origin gh-pages
 ```
 
 ## Deploying Your Book to GitHub Pages
@@ -92,63 +152,3 @@ deploy:
   target_branch: gh-pages
 ```
 
-### Deploying to GitHub Pages manually
-
-If your CI doesn't support GitHub pages, or you're deploying somewhere else
-with integrations such as Github Pages:
- *note: you may want to use different tmp dirs*:
-
-```console
-$> git worktree add /tmp/book gh-pages
-$> mdbook build
-$> rm -rf /tmp/book/* # this won't delete the .git directory
-$> cp -rp book/* /tmp/book/
-$> cd /tmp/book
-$> git add -A
-$> git commit 'new book message'
-$> git push origin gh-pages
-$> cd -
-```
-
-Or put this into a Makefile rule:
-
-```makefile
-.PHONY: deploy
-deploy: book
-	@echo "====> deploying to github"
-	git worktree add /tmp/book gh-pages
-	rm -rf /tmp/book/*
-	cp -rp book/* /tmp/book/
-	cd /tmp/book && \
-		git add -A && \
-		git commit -m "deployed on $(shell date) by ${USER}" && \
-		git push origin gh-pages
-```
-
-## Deploying Your Book to GitLab Pages
-Inside your repository's project root, create a file named `.gitlab-ci.yml` with the following contents:
-```yml
-stages:
-    - deploy
-
-pages:
-  stage: deploy
-  image: rust
-  variables:
-    CARGO_HOME: $CI_PROJECT_DIR/cargo
-  before_script:
-    - export PATH="$PATH:$CARGO_HOME/bin"
-    - mdbook --version || cargo install mdbook
-  script:
-        - mdbook build -d public
-  only:
-      - master 
-  artifacts:
-      paths:
-          - public
-  cache:
-    paths:
-    - $CARGO_HOME/bin
-```
-
-After you commit and push this new file, GitLab CI will run and your book will be available!
