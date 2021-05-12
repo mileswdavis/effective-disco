@@ -95,6 +95,7 @@ deploy:
 ### Deploying to GitHub Pages manually
 
 If your CI doesn't support GitHub pages, or you're deploying somewhere else
+RAWR!!!
 with integrations such as Github Pages:
  *note: you may want to use different tmp dirs*:
 
